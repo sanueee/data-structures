@@ -7,14 +7,15 @@
 typedef unsigned long long ull;
 
 int splitting_read(char* content, char*** tokens_res);
-bool get_arg(char** tokens, int token_count, const char* arg_name, char* value, size_t max_len);
 bool get_arg_ull(char** args, int count_args, const char* arg_name, ull* value);
 bool get_arg_str(char** args, int count_args, const char* arg_name, char* value, size_t max_len);
 bool is_valid_number(const char* str);
+ull gcd(ull a, ull b);
 bool process_get_c(char** args, int count_args, FILE* output_file);
 bool process_get_a(char** args, int count_args, FILE* output_file);
 bool process_lcg(char** args, int count_args, FILE* output_file);
-bool process_test(char** args, int count_args, FILE* output_file);
+// bool process_test1(char** args, int count_args, FILE* output_file);
+// bool process_test2(char** args, int count_args, FILE* output_file);
 
 int main(void) {
     FILE* input_file = fopen("input.txt", "r");
@@ -131,29 +132,6 @@ int splitting_read(char* content, char*** tokens_res) { // дробим content 
     return count; 
 }
 
-bool get_arg(char** tokens, int token_count, const char* arg_name, char* value, size_t max_len) {
-    for (int i = 0; i < count; i++) {
-        char* eq = strchr(tokens[i], '=');
-        if (eq == NULL) {
-            continue;
-        }
-        int name_len = eq - tokens[i];
-        if (name_len != strlen(name)) {
-            continue;
-        }
-        if (strncmp(tokens[i], name, name_len) != 0) {
-            continue;
-        }
-        const char* value_str = eq + 1;
-        if (strlen(value_str) == 0 || strlen(value_str) >= max_len) {
-            return false;
-        }
-        strcpy(value, value_str);
-        return true;
-    }
-    return false;
-}
-
 bool get_arg_ull(char** args, int count_args, const char* arg_name, ull* value) {
     // по arg_name в args находим и записываем в value (для всех кроме test - там после "=" идет строка)
     for (int i = 0; i < count_args; i++) {
@@ -228,20 +206,147 @@ bool is_valid_number(const char* str) {
     return true;
 }
 
-bool process_get_c(char** args, int count_args, FILE* output_file) {
+ull gcd(ull a, ull b) {
+    while (b != 0) {
+        ull temp = b;
+        b = a % b;
+        a = temp;
+    }
+    return a;
+}
 
+bool process_get_c(char** args, int count_args, FILE* output_file) {
+    ull cmin, cmax, m;
+
+    if (!get_arg_ull(args, count_args, "cmin", &cmin) ||
+        !get_arg_ull(args, count_args, "cmax", &cmax) ||
+        !get_arg_ull(args, count_args, "m", &m)) {
+            return false;
+    }
+    
+    if (cmin > cmax || cmax >= m || m == 0) {
+        return false;
+    }
+    
+    bool found = false;
+    for (ull c = cmin; c <= cmax; c++) {
+        if (gcd(c, m) == 1) {
+            fprintf(output_file, "%llu\n", c);
+            found = true;
+        }
+    }
+    
+    if (!found) {
+        fprintf(output_file, "no solution");
+    }
+    
+    return true;
+}
+
+int get_prime_divs(ull n, ull** divs_res) {
+    if (n <= 1) {
+        return 0;
+    }
+    
+    ull* divs = malloc(64 * sizeof(ull));
+    if (divs == NULL) {
+        return -1;
+    }
+    
+    int count = 0;
+    if (n % 2 == 0) { // если двойка есть в простых делителях
+        divs[count++] = 2;
+        while (n % 2 == 0) {
+            n /= 2;
+        }
+    }
+    // когда мы доходим до составного числа i, число n уже не делится на i
+    // все простые делители этого составного числа были убраны раньше
+    for (ull i = 3; i * i <= n; i += 2) {
+        if (n % i == 0) {
+            divs[count++] = i;
+            while (n % i == 0) {
+                n /= i;
+            }
+        }
+    }
+    
+    if (n > 1) {
+        divs[count++] = n;
+    }
+    
+    *divs_re = divs;
+    return count;
 }
 
 bool process_get_a(char** args, int count_args, FILE* output_file) {
+    ull m;
+    if (!get_arg_ull(args, count_args, "m", &m)) {
+        return false;
+    }
+    if (m <= 1) {
+        return false;
+    }
     
+    ull* divs_m = NULL;
+    int divs_count = get_prime_divs(m, &divs_m);
+    
+    bool found = false;
+    for (ull a = 1; a < m; a++) {
+        ull b = a - 1;
+        
+        bool all_divide = true;
+        for (int i = 0; i < divs_count; i++) {
+            if (b % divs_m[i] != 0) {
+                all_divide = false;
+                break;
+            }
+        }
+        
+        if (!all_divide) {
+            continue;
+        }
+        
+        if (m % 4 == 0 && b % 4 != 0) {
+            continue;
+        }
+        
+        fprintf(output_file, "%llu\n", a);
+        found = true;
+        break;
+    }
+    
+    if (!found) {
+        fprintf(output_file, "no solution");
+    }
+    
+    free(divs_m);
+    return true;
 }
 
 bool process_lcg(char** args, int count_args, FILE* output_file) {
+    ull a, x0, c, m, n;
     
-}
+    if (!get_arg_ull(args, count_args, "a", &a) ||
+        !get_arg_ull(args, count_args, "x0", &x0) ||
+        !get_arg_ull(args, count_args, "c", &c) ||
+        !get_arg_ull(args, count_args, "m", &m) ||
+        !get_arg_ull(args, count_args, "n", &n)) {
+        return false;
+    }
 
-bool process_test(char** args, int count_args, FILE* output_file) {
+    if (n == 0 || m == 0 || a >= m || c >= m || x0 >= m) {
+        fprintf(output_file, "no solution");
+        return true;
+    }
+
+    ull x = x0;
+    for (ull i = 0; i < n; i++) {
+        fprintf(output_file, "%llu ", x);
+        x = (a * x + c) % m;
+    }
     
+    return true;
 }
 
 
