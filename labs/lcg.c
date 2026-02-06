@@ -12,13 +12,14 @@ bool get_arg_str(char** args, int count_args, const char* arg_name, char* value,
 bool is_valid_number(const char* str);
 ull gcd(ull a, ull b);
 bool process_get_c(char** args, int count_args, FILE* output_file);
+int get_prime_divs(ull n, ull** divs_res);
 bool process_get_a(char** args, int count_args, FILE* output_file);
 bool process_lcg(char** args, int count_args, FILE* output_file);
-// bool process_test1(char** args, int count_args, FILE* output_file);
-// bool process_test2(char** args, int count_args, FILE* output_file);
+bool frequency_test(char** args, int count_args, FILE* output_file);
+// тут твой тест никитос (тело внизу самом)
 
 int main(void) {
-    FILE* input_file = fopen("input.txt", "r");
+    FILE* input_file = fopen("/Users/sanueee/vscode_projects/C_projects/ds/labs/input.txt", "r");
     if (input_file == NULL) {
         return 1;
     }
@@ -43,7 +44,7 @@ int main(void) {
     int token_count = splitting_read(content, &tokens);
 
     if (token_count <= 1) {
-        fprintf(output, "incorrect command\n");
+        fprintf(output_file, "incorrect command\n");
         free(content);
         fclose(input_file);
         fclose(output_file);
@@ -63,7 +64,7 @@ int main(void) {
     } else if (cmd_len == 3 && strncmp(command, "lcg", 3) == 0) {
         success = process_lcg(args, count_args, output_file);
     } else if (cmd_len == 4 && strncmp(command, "test", 4) == 0) {
-        success = process_test(args, count_args, output_file);
+        success = frequency_test(args, count_args, output_file);
     } else {
         success = false;
     }
@@ -105,7 +106,7 @@ int splitting_read(char* content, char*** tokens_res) { // дробим content 
         return -1;
     }
 
-    int i = 0; int token_idx = 0;
+    i = 0; int token_idx = 0;
     while (content[i] != '\0') {
         while (content[i] == ' ' || content[i] == '\t' || content[i] == '\n') {
             i++;
@@ -224,12 +225,12 @@ bool process_get_c(char** args, int count_args, FILE* output_file) {
             return false;
     }
     
-    if (cmin > cmax || cmax >= m || m == 0) {
+    if (cmin > cmax || m == 0) {
         return false;
     }
     
     bool found = false;
-    for (ull c = cmin; c <= cmax; c++) {
+    for (ull c = cmin; c <= m; c++) {
         if (gcd(c, m) == 1) {
             fprintf(output_file, "%llu\n", c);
             found = true;
@@ -275,7 +276,7 @@ int get_prime_divs(ull n, ull** divs_res) {
         divs[count++] = n;
     }
     
-    *divs_re = divs;
+    *divs_res = divs;
     return count;
 }
 
@@ -349,4 +350,93 @@ bool process_lcg(char** args, int count_args, FILE* output_file) {
     return true;
 }
 
+bool frequency_test(char** args, int count_args, FILE* output_file) {
+    char filename[256];
+    if (!get_arg_str(args, count_args, "inp", filename, sizeof(filename))) {
+        fprintf(output_file, "incorrect command");
+        return false;
+    }
 
+    FILE* input = fopen(filename, "r");
+    if (!input) {
+        fprintf(output_file, "incorrect command");
+        return false;
+    }
+
+    ull* numbers = malloc(1024 * sizeof(ull));
+    size_t capacity = 1024;
+    size_t count = 0;
+
+    ull num;
+    while (fscanf(input, "%llu", &num) == 1) {
+        if (count > capacity) {
+            capacity *= 2;
+            numbers = realloc(numbers, capacity * sizeof(ull));
+        }
+        numbers[count++] = num;
+    }
+    fclose(input);
+
+    if (count == 0) {
+        free(numbers);
+        return false;
+    }
+
+    ull min_val = numbers[0];
+    ull max_val = numbers[0];
+    for (size_t i = 1; i < count; i++) {
+        if (numbers[i] < min_val) min_val = numbers[i];
+        if (numbers[i] > max_val) max_val = numbers[i];
+    }
+
+    const int k = 11;
+    int freq[11] = {0};
+    
+    double range = (double)(max_val - min_val);
+    for (size_t i = 0; i < count; i++) {
+        int interval = (int)((numbers[i] - min_val) / range * k);
+        if (interval >= k) interval = k - 1;  // max попадает в последний
+        freq[interval]++;
+    }
+    
+    double expected = (double)count / k;
+    double phi_square = 0.0;
+    
+    for (int i = 0; i < k; i++) {
+        double diff = freq[i] - expected;
+        phi_square += (diff * diff) / expected;
+    }
+    
+    // табличные значения стр. 58
+    const double phi_lower = 3.940;
+    const double phi_upper = 18.31;
+    
+    fprintf(output_file, "n=%zu\n", count);
+    fprintf(output_file, "[%llu, %llu]\n", min_val, max_val);
+    fprintf(output_file, "k=%d\n", k);
+    fprintf(output_file, "v=%d\n", k - 1);
+    
+    for (int i = 0; i < k; i++) {
+        ull start = min_val + (ull)(range * i / k);
+        ull end = min_val + (ull)(range * (i + 1) / k);
+        fprintf(output_file, "frequency in №%d - [%llu , %llu): %5d\n", i+1, start, end, freq[i]); // частоты интервалов
+    }
+    
+    fprintf(output_file, "expected=%.2f\n", expected); // если равномерно
+    fprintf(output_file, "x^2=%.4f\n", phi_square); // фи квадрат
+    fprintf(output_file, "lower (p = 5%%):  %.3f\n", phi_lower);
+    fprintf(output_file, "upper (p = 95%%): %.3f\n", phi_upper);
+    
+    fprintf(output_file, "result: ");
+    if (phi_square >= phi_lower && phi_square <= phi_upper) {
+        fprintf(output_file, "random\n");
+        fprintf(output_file, "  (%.3f <= %.4f <= %.3f)\n", phi_lower, phi_square, phi_upper);
+    } else {
+        fprintf(output_file, "NOT random\n");
+    }
+    
+    free(numbers);
+    return true;
+}
+
+//bool NIKITA_TEST(char** args, int count_args, FILE* output_file);
