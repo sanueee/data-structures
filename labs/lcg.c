@@ -233,7 +233,7 @@ bool process_get_c(char** args, int count_args, FILE* output_file) {
     }
     
     bool found = false;
-    for (ull c = cmin; c <= m; c++) {
+    for (ull c = cmin; c <= cmax; c++) {
         if (gcd(c, m) == 1) {
             fprintf(output_file, "%llu\n", c);
             found = true;
