@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <math.h>
 
 typedef unsigned long long ull;
 
@@ -14,9 +15,9 @@ ull gcd(ull a, ull b);
 bool process_get_c(char** args, int count_args, FILE* output_file);
 int get_prime_divs(ull n, ull** divs_res);
 bool process_get_a(char** args, int count_args, FILE* output_file);
-bool process_lcg(char** args, int count_args, FILE* output_file);
+bool process_lcg(char** args, int count_args, FILE* output_file, ull *period);
 bool frequency_test(char** args, int count_args, FILE* output_file);
-// тут твой тест никитос (тело внизу самом)
+bool gap_test(char **args, int count_args, FILE *output_file);
 
 int main(void) {
     FILE* input_file = fopen("/Users/sanueee/vscode_projects/C_projects/ds/labs/input.txt", "r");
@@ -55,6 +56,7 @@ int main(void) {
     size_t cmd_len = strlen(command); // длина команды
     char** args = tokens + 1; // массив строк с аргументами вида name=value
     int count_args = token_count - 1; // длина массива args
+    ull period = 0;
 
     bool success = false;
     if (cmd_len == 5 && strncmp(command, "get_c", 5) == 0) {
@@ -62,7 +64,8 @@ int main(void) {
     } else if (cmd_len == 5 && strncmp(command, "get_a", 5) == 0) {
         success = process_get_a(args, count_args, output_file);
     } else if (cmd_len == 3 && strncmp(command, "lcg", 3) == 0) {
-        success = process_lcg(args, count_args, output_file);
+        success = process_lcg(args, count_args, output_file, &period);
+        fprintf(stdout, "период = %llu", period);
     } else if (cmd_len == 4 && strncmp(command, "test", 4) == 0) {
         success = frequency_test(args, count_args, output_file);
     } else {
@@ -325,7 +328,7 @@ bool process_get_a(char** args, int count_args, FILE* output_file) {
     return true;
 }
 
-bool process_lcg(char** args, int count_args, FILE* output_file) {
+bool process_lcg(char** args, int count_args, FILE* output_file, ull *period) {
     ull a, x0, c, m, n;
     
     if (!get_arg_ull(args, count_args, "a", &a) ||
@@ -341,10 +344,14 @@ bool process_lcg(char** args, int count_args, FILE* output_file) {
         return true;
     }
 
-    ull x = x0;
+    ull x = x0; bool found = false;
     for (ull i = 0; i < n; i++) {
-        fprintf(output_file, "%llu ", x);
+        fprintf(output_file, "%llu\n", x);
         x = (a * x + c) % m;
+        if (x == x0 && !found) {
+            *period = i+1;
+            found = true;
+        }
     }
     
     return true;
@@ -439,4 +446,188 @@ bool frequency_test(char** args, int count_args, FILE* output_file) {
     return true;
 }
 
-//bool NIKITA_TEST(char** args, int count_args, FILE* output_file);
+bool gap_test(char **args, int count_args, FILE *output_file)
+{
+    char filename[256];
+    if (!get_arg_str(args, count_args, "inp", filename, sizeof(filename)))
+    {
+        fprintf(output_file, "incorrect command");
+        return false;
+    }
+
+    double alpha = 0.25;
+    double beta = 0.75;
+
+    FILE *input = fopen(filename, "r");
+    if (!input)
+    {
+        fprintf(output_file, "incorrect command");
+        return false;
+    }
+
+    ull *numbers = malloc(1000 * sizeof(ull));
+    size_t count = 0;
+    ull max_val = 0;
+
+    while (fscanf(input, "%llu", &numbers[count]) == 1 && count < 999)
+    {
+        if (numbers[count] > max_val)
+        {
+            max_val = numbers[count];
+        }
+        count++;
+    }
+    fclose(input);
+
+    if (count < 2 || max_val == 0)
+    {
+        free(numbers);
+        fprintf(output_file, "not enough numbers or max=0");
+        return true;
+    }
+
+    double *normalized = malloc(count * sizeof(double));
+    for (size_t i = 0; i < count; i++)
+    {
+        normalized[i] = (double)numbers[i] / (max_val + 1.0);
+    }
+
+    int gap_lengths[100] = {0};
+    int max_gap_length = 0;
+
+    int current_gap = 0;
+    int gaps_count = 0;
+
+    for (size_t i = 0; i < count; i++)
+    {
+        if (normalized[i] >= alpha && normalized[i] <= beta)
+        {
+            if (current_gap < 100)
+            {
+                gap_lengths[current_gap]++;
+            }
+            else
+            {
+                gap_lengths[99]++;
+            }
+
+            if (current_gap > max_gap_length)
+            {
+                max_gap_length = current_gap;
+            }
+
+            gaps_count++;
+            current_gap = 0;
+        }
+        else
+        {
+            current_gap++;
+        }
+    }
+
+    double p = beta - alpha;
+    double expected_prob;
+    double expected_count;
+    double chi_square = 0.0;
+    int degrees_of_freedom = 0;
+
+    fprintf(output_file, "Gap test (Knuth vol.2, 3.3.2):\n");
+    fprintf(output_file, "n=%zu\n", count);
+    fprintf(output_file, "alpha=%.3f\n", alpha);
+    fprintf(output_file, "beta=%.3f\n", beta);
+    fprintf(output_file, "p=beta-alpha=%.3f\n", p);
+    fprintf(output_file, "total gaps found=%d\n", gaps_count);
+    fprintf(output_file, "\nGap length distribution:\n");
+    fprintf(output_file, "Length  Observed  Expected\n");
+    fprintf(output_file, "----------------------------\n");
+
+    int combined_observed = 0;
+    double combined_expected = 0.0;
+    int combined_from = 0;
+    int combined_to = 0;
+
+    for (int r = 0; r <= max_gap_length + 1; r++)
+    {
+        int observed = (r <= max_gap_length) ? gap_lengths[r] : 0;
+
+        expected_prob = pow(1 - p, r) * p;
+        expected_count = gaps_count * expected_prob;
+
+        if (r == max_gap_length + 1)
+        {
+            if (combined_observed > 0)
+            {
+                fprintf(output_file, "%2d-%-2d  %7d  %9.2f\n",
+                        combined_from, combined_to, combined_observed, combined_expected);
+
+                chi_square += pow(combined_observed - combined_expected, 2) / combined_expected;
+                degrees_of_freedom++;
+            }
+            break;
+        }
+
+        if (expected_count >= 5.0)
+        {
+            if (combined_observed > 0)
+            {
+                fprintf(output_file, "%2d-%-2d  %7d  %9.2f\n",
+                        combined_from, combined_to, combined_observed, combined_expected);
+
+                chi_square += pow(combined_observed - combined_expected, 2) / combined_expected;
+                degrees_of_freedom++;
+
+                combined_observed = 0;
+                combined_expected = 0.0;
+            }
+
+            fprintf(output_file, "%5d  %7d  %9.2f\n", r, observed, expected_count);
+            chi_square += pow(observed - expected_count, 2) / expected_count;
+            degrees_of_freedom++;
+        }
+        else
+        {
+            if (combined_observed == 0)
+            {
+                combined_from = r;
+            }
+            combined_to = r;
+            combined_observed += observed;
+            combined_expected += expected_count;
+        }
+    }
+
+    fprintf(output_file, "\nTest results:\n");
+    fprintf(output_file, "Chi-square statistic = %.4f\n", chi_square);
+    fprintf(output_file, "Degrees of freedom = %d\n", degrees_of_freedom - 1);
+
+    double critical_low[11] = {0, 0.0039, 0.1026, 0.3518, 0.7107, 1.1455,
+                               1.6354, 2.1673, 2.7326, 3.3251, 3.9403};
+    double critical_high[11] = {0, 5.0239, 7.3778, 9.3484, 11.1433, 12.8325,
+                                14.4494, 16.0128, 17.5346, 19.0228, 20.4832};
+
+    int df = degrees_of_freedom - 1;
+    if (df < 1)
+        df = 1;
+    if (df > 10)
+        df = 10;
+
+    fprintf(output_file, "Critical values (95%% confidence):\n");
+    fprintf(output_file, "  Lower (5%%): %.4f\n", critical_low[df]);
+    fprintf(output_file, "  Upper (95%%): %.4f\n", critical_high[df]);
+
+    fprintf(output_file, "Result: ");
+    if (chi_square >= critical_low[df] && chi_square <= critical_high[df])
+    {
+        fprintf(output_file, "RANDOM (%.4f in [%.4f, %.4f])\n",
+                chi_square, critical_low[df], critical_high[df]);
+    }
+    else
+    {
+        fprintf(output_file, "NOT RANDOM (%.4f not in [%.4f, %.4f])\n",
+                chi_square, critical_low[df], critical_high[df]);
+    }
+
+    free(numbers);
+    free(normalized);
+    return true;
+}
