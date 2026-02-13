@@ -66,8 +66,10 @@ int main(void) {
     } else if (cmd_len == 3 && strncmp(command, "lcg", 3) == 0) {
         success = process_lcg(args, count_args, output_file, &period);
         fprintf(stdout, "период = %llu", period);
-    } else if (cmd_len == 4 && strncmp(command, "test", 4) == 0) {
+    } else if (cmd_len == 4 && strncmp(command, "freq", 4) == 0) {
         success = frequency_test(args, count_args, output_file);
+    } else if (cmd_len == 3 && strncmp(command, "gap", 3) == 0) {
+        success = gap_test(args, count_args, output_file);
     } else {
         success = false;
     }
@@ -296,7 +298,7 @@ bool process_get_a(char** args, int count_args, FILE* output_file) {
     int divs_count = get_prime_divs(m, &divs_m);
     
     bool found = false;
-    for (ull a = 1; a < m; a++) {
+    for (ull a = 2; a < m; a++) {
         ull b = a - 1;
         
         bool all_divide = true;
@@ -376,7 +378,7 @@ bool frequency_test(char** args, int count_args, FILE* output_file) {
 
     ull num;
     while (fscanf(input, "%llu", &num) == 1) {
-        if (count > capacity) {
+        if (count >= capacity) {
             capacity *= 2;
             numbers = realloc(numbers, capacity * sizeof(ull));
         }
@@ -399,24 +401,24 @@ bool frequency_test(char** args, int count_args, FILE* output_file) {
     const int k = 11;
     int freq[11] = {0};
     
-    double range = (double)(max_val - min_val);
+    ull range = max_val - min_val;
     for (size_t i = 0; i < count; i++) {
-        int interval = (int)((numbers[i] - min_val) / range * k);
+        int interval = (int)((long double)(numbers[i] - min_val) / range * k);
         if (interval >= k) interval = k - 1;  // max попадает в последний
         freq[interval]++;
     }
     
-    double expected = (double)count / k;
-    double phi_square = 0.0;
+    long double expected = (long double)(count / k);
+    long double phi_square = 0.0;
     
     for (int i = 0; i < k; i++) {
-        double diff = freq[i] - expected;
+        long double diff = freq[i] - expected;
         phi_square += (diff * diff) / expected;
     }
     
     // табличные значения стр. 58
-    const double phi_lower = 3.940;
-    const double phi_upper = 18.31;
+    const long double phi_lower = 3.940;
+    const long double phi_upper = 18.31;
     
     fprintf(output_file, "n=%zu\n", count);
     fprintf(output_file, "[%llu, %llu]\n", min_val, max_val);
@@ -429,19 +431,151 @@ bool frequency_test(char** args, int count_args, FILE* output_file) {
         fprintf(output_file, "frequency in №%d - [%llu , %llu): %5d\n", i+1, start, end, freq[i]); // частоты интервалов
     }
     
-    fprintf(output_file, "expected=%.2f\n", expected); // если равномерно
-    fprintf(output_file, "x^2=%.4f\n", phi_square); // фи квадрат
-    fprintf(output_file, "lower (p = 5%%):  %.3f\n", phi_lower);
-    fprintf(output_file, "upper (p = 95%%): %.3f\n", phi_upper);
+    fprintf(output_file, "expected=%.2Lf\n", expected); // если равномерно
+    fprintf(output_file, "x^2=%.4Lf\n", phi_square); // фи квадрат
+    fprintf(output_file, "lower (p = 5%%):  %.3Lf\n", phi_lower);
+    fprintf(output_file, "upper (p = 95%%): %.3Lf\n", phi_upper);
     
     fprintf(output_file, "result: ");
     if (phi_square >= phi_lower && phi_square <= phi_upper) {
         fprintf(output_file, "random\n");
-        fprintf(output_file, "  (%.3f <= %.4f <= %.3f)\n", phi_lower, phi_square, phi_upper);
+        fprintf(output_file, "  (%.3Lf <= %.4Lf <= %.3Lf)\n", phi_lower, phi_square, phi_upper);
     } else {
         fprintf(output_file, "NOT random\n");
     }
     
     free(numbers);
+    return true;
+}
+
+bool gap_test(char **args, int count_args, FILE *output_file)
+{
+    char filename[256];
+
+    if (!get_arg_str(args, count_args, "inp", filename, sizeof(filename)))
+    {
+        fprintf(output_file, "incorrect command");
+        return false;
+    }
+
+    FILE *input = fopen(filename, "r");
+    if (!input)
+    {
+        fprintf(output_file, "incorrect command");
+        return false;
+    }
+
+    ull max_value = 0ULL;
+    ull temp;
+
+    while (fscanf(input, "%llu", &temp) == 1)
+        if (temp > max_value)
+            max_value = temp;
+
+    if (max_value == 0)
+    {
+        fclose(input);
+        fprintf(output_file, "empty file\n");
+        return false;
+    }
+
+    ull modulus = max_value + 1;
+    rewind(input);
+
+    long double alpha = .0;
+    long double beta = .5;
+    int n = 500; // сколько интервалов нужно найти
+    int t = 5;   // интервалы длиной >= t вместе с count[i]
+
+    // инициализация
+    int j = 0;
+    int s = 0;
+
+    int *count = calloc(t + 1, sizeof(int));
+    if (!count)
+    {
+        fclose(input);
+        fprintf(output_file, "memory error");
+        return false;
+    }
+
+    /* имем, когда a <= Uj <= bet */
+    while (s < n)
+    {
+        int r = 0;
+        long double Uj;
+
+        while (1)
+        {
+            ull raw_value;
+            if (fscanf(input, "%llu", &raw_value) != 1)
+            {
+                fclose(input);
+                free(count);
+                fprintf(output_file, "not enough data");
+                return false;
+            }
+
+            Uj = (long double)raw_value / (long double)modulus;
+            j++;
+
+            if (Uj >= alpha && Uj < beta)
+            {
+                break;
+            }
+            r++;
+        }
+
+        if (r >= t)
+        {
+            count[t]++;
+        }
+        else
+        {
+            count[r]++;
+        }
+        s++;
+    }
+
+    long double p = beta - alpha, pr;
+    long double chi_square = 0.0L;
+
+    for (int r = 0; r <= t; r++)
+    {
+        pr = r < t ? p * powl(1.0 - p, r) : powl(1.0 - p, t);
+
+        long double expected = n * pr;   // ожидамое
+        long double observed = count[r]; // наблюдаемов
+
+        chi_square += (observed - expected) * (observed - expected) / expected;
+    }
+
+    // для каждого r вычисляем вероятность pr
+    // expected = n * pr -> сколько должно быть интвервалов длиной r
+
+    // k - 1 = (t + 1) - 1 = t
+    int df = t;
+
+    long double chi = 11.07;
+
+    fprintf(output_file, "a = %.2Lf, b = %.2Lf\n", alpha, beta);
+    fprintf(output_file, "n = %d intervals found\n", n);
+    fprintf(output_file, "\nintervals lengths distribution:\n");
+    for (int r = 0; r <= t; r++)
+    {
+        if (r < t)
+            fprintf(output_file, "Length %d: %d\n", r, count[r]);
+        else
+            fprintf(output_file, "Length ≥%d: %d\n", t, count[r]);
+    }
+
+    fprintf(output_file, "\nX2 = %.4Lf\n", chi_square);
+    fprintf(output_file, "critical value (df=%d, a = 0.05): %.4Lf\n", df, chi);
+    fprintf(output_file, "test result: %s\n",
+            chi_square < chi ? "random" : "not random");
+
+    free(count);
+    fclose(input);
+
     return true;
 }
