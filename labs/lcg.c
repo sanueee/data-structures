@@ -386,11 +386,6 @@ bool frequency_test(char** args, int count_args, FILE* output_file) {
     }
     fclose(input);
 
-    if (count == 0) {
-        free(numbers);
-        return false;
-    }
-
     ull min_val = numbers[0];
     ull max_val = numbers[0];
     for (size_t i = 1; i < count; i++) {
@@ -398,27 +393,28 @@ bool frequency_test(char** args, int count_args, FILE* output_file) {
         if (numbers[i] > max_val) max_val = numbers[i];
     }
 
-    const int k = 11;
-    int freq[11] = {0};
+    const int k = 10;
+    int freq[10] = {0};
     
-    ull range = max_val - min_val;
+    long double range = (long double)(max_val - min_val);
     for (size_t i = 0; i < count; i++) {
-        int interval = (int)((long double)(numbers[i] - min_val) / range * k);
-        if (interval >= k) interval = k - 1;  // max попадает в последний
+        long double normalized = (long double)(numbers[i] - min_val) / range;
+        int interval = (int)(normalized * k);
+        if (interval >= k) {
+            interval = k - 1;
+        }
         freq[interval]++;
     }
     
-    long double expected = (long double)(count / k);
-    long double phi_square = 0.0;
-    
+    long double expected = (long double)count / k;
+    long double phi_square = 0.0;    
     for (int i = 0; i < k; i++) {
-        long double diff = freq[i] - expected;
-        phi_square += (diff * diff) / expected;
+        phi_square += (freq[i] - expected) * (freq[i] - expected) / expected;
     }
     
     // табличные значения стр. 58
-    const long double phi_lower = 3.940;
-    const long double phi_upper = 18.31;
+    const long double phi_lower = 3.325;
+    const long double phi_upper = 16.92;
     
     fprintf(output_file, "n=%zu\n", count);
     fprintf(output_file, "[%llu, %llu]\n", min_val, max_val);
@@ -431,11 +427,7 @@ bool frequency_test(char** args, int count_args, FILE* output_file) {
         fprintf(output_file, "frequency in №%d - [%llu , %llu): %5d\n", i+1, start, end, freq[i]); // частоты интервалов
     }
     
-    fprintf(output_file, "expected=%.2Lf\n", expected); // если равномерно
-    fprintf(output_file, "x^2=%.4Lf\n", phi_square); // фи квадрат
-    fprintf(output_file, "lower (p = 5%%):  %.3Lf\n", phi_lower);
-    fprintf(output_file, "upper (p = 95%%): %.3Lf\n", phi_upper);
-    
+    fprintf(output_file, "x^2=%.4Lf\n", phi_square); // фи квадрат   
     fprintf(output_file, "result: ");
     if (phi_square >= phi_lower && phi_square <= phi_upper) {
         fprintf(output_file, "random\n");
