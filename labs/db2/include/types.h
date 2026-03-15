@@ -4,6 +4,9 @@
 #include <time.h>
 
 #define MAX_NAME 256
+#define MAX_NAMES 16
+#define MAX_CONDS 16
+#define MAX_FV 16
 
 typedef enum
 {
@@ -53,5 +56,29 @@ typedef struct
     node* head;
     size_t size;
 } list;
+
+typedef struct 
+{
+    char f[64]; 
+    char v[256]; 
+} fv_pair;
+
+typedef enum 
+{ 
+    OP_LT, 
+    OP_LE, 
+    OP_GT, 
+    OP_GE, 
+    OP_EQ, 
+    OP_NE, 
+    OP_IN 
+} op_t;
+
+typedef struct 
+{ 
+    char f[64];
+    op_t op; 
+    char v[256]; 
+} cond;
 
 #endif

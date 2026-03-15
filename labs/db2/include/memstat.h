@@ -8,16 +8,18 @@ typedef struct
     size_t malloc_count;
     size_t calloc_count;
     size_t realloc_count;
-    size_t free;
+    size_t free_count;
 } memstat;
 
 extern memstat stats;
 
-#define MALLOC(size)       (memstat.malloc_count++,  malloc(size))
-#define CALLOC(n, size)    (memstat.calloc_count++,  calloc(n, size))
-#define FREE(ptr)          (memstat.free_count++,    free(ptr))
+void write_memstat(void);
+
+#define MALLOC(size)       (stats.malloc_count++,  malloc(size))
+#define CALLOC(n, size)    (stats.calloc_count++,  calloc(n, size))
+#define FREE(ptr)          (stats.free_count++,    free(ptr))
 #define REALLOC(ptr, size) ((ptr) == NULL \
-    ? (memstat.malloc_count++,  realloc(NULL, size)) \
-    : (memstat.realloc_count++, realloc(ptr,  size)))
+    ? (stats.malloc_count++,  realloc(NULL, size)) \
+    : (stats.realloc_count++, realloc(ptr,  size)))
 
 #endif
