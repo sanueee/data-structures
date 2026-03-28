@@ -8,8 +8,10 @@
 static void strip_newline(char *s)
 {
     size_t len = strlen(s);
-    if (len > 0 && s[len - 1] == '\n') s[len - 1] = '\0';
-    if (len > 1 && s[len - 2] == '\r') s[len - 2] = '\0';
+    if (len > 0 && s[len - 1] == '\n')
+        s[len - 1] = '\0';
+    if (len > 1 && s[len - 2] == '\r')
+        s[len - 2] = '\0';
 }
 
 int main(int argc, char *argv[])
@@ -35,7 +37,8 @@ int main(int argc, char *argv[])
         while (fgets(line, sizeof(line), input))
         {
             strip_newline(line);
-            if (line[0] == '\0') continue;
+            if (line[0] == '\0')
+                continue;
             execute_command(line, output);
         }
 
