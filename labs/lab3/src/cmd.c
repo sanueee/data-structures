@@ -1,6 +1,9 @@
 #include "../include/cmd.h"
 #include "../include/parser.h"
 #include "../include/ast.h"
+#include "../include/eval.h"
+
+#include <stdio.h>
 
 static ASTNode *g_tree = NULL;
 
@@ -88,12 +91,82 @@ int execute_command(const char* buffer, FILE *output)
     {
         if (g_tree == NULL)
         {
-            fprintf(output, "not_loaded\n");
+            fprintf(output, "not loaded\n");
             return 1;
         }
-        
+        VarBinding bindings[128];
+        int n = 0;
+        const char *q = args;
+
+        while (*q)
+        {
+            while (*q == ' ' || *q == '\t')
+                q++;
+            if (*q == '\0')
+                break;
+
+            char name[64];
+            int j = 0;
+            while (isalpha((unsigned char)*q) && j < 63)
+                name[j++] = *q++;
+            name[j] = '\0';
+
+            if (j == 0 || *q != '=')
+            {
+                fprintf(output, "error: '=' not found\n");
+                return 1;
+            }
+            q++;
+
+            int neg = 0;
+            if (*q == '-')
+            {
+                neg = 1;
+                q++;
+            }
+            if (!isdigit((unsigned char)*q))
+            {
+                fprintf(output, "error: not digit\n");
+                return 1;
+            }
+
+            long long val = 0;
+            while (isdigit((unsigned char)*q))
+                val = val * 10 + (*q++ - '0');
+            if (neg)
+                val = -val;
+
+            if (n < 128)
+            {
+                strncpy(bindings[n].name, name, 63);
+                bindings[n].name[63] = '\0';
+                bindings[n].value = val;
+                n++;
+            }
+
+            while (*q == ' ' || *q == '\t')
+                q++;
+            if (*q == ',')
+                q++;
+        }
+
+        long long result;
+        if (ast_eval(g_tree, bindings, n, &result))
+        {
+            fprintf(output, "%lld\n", result);
+        }
+        else
+        {
+            fprintf(output, "error while eval");
+        }
         return 1;
     }
+    else
+    {
+        fprintf(output, "incorrect command");
+    }
+
+    return 1;
 }
 
 void cmd_clean()
