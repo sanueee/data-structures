@@ -1,0 +1,115 @@
+# === parse: корректные выражения ===
+parse 5*(14-4*2)/2
+parse 6#8
+parse 6@8
+parse 1+6#8+11
+parse 1+6@8+11
+parse 12#8#4
+parse 4@6@12
+parse (6#9)@(4#8)
+parse x+y
+parse a#b@c
+parse 100#75
+# === parse: некорректные выражения ===
+parse
+parse 5+
+parse *3
+parse 5+(3*
+parse 5+)3
+parse 5 + $ 3
+# === save_prf / save_pst без загруженного дерева ===
+save_prf
+save_pst
+# --- parse + save ---
+parse 5*(14-4*2)/2
+save_prf
+save_pst
+
+parse 6#8
+save_prf
+save_pst
+
+parse 1+6#8+11
+save_prf
+save_pst
+
+parse 1+6@8+11
+save_prf
+save_pst
+
+parse (6#9)@(4#8)
+save_prf
+save_pst
+
+# === load_prf ===
+load_prf / * 5 - 14 * 4 2 2
+save_pst
+
+load_prf # 6 8
+save_prf
+save_pst
+
+load_prf @ 6 8
+save_prf
+save_pst
+
+load_prf + # 12 8 @ 4 6
+save_prf
+save_pst
+
+# load_prf: некорректные
+load_prf
+load_prf +
+load_prf + 1
+
+# === load_pst ===
+load_pst 5 14 4 2 * - * 2 /
+save_prf
+
+load_pst 6 8 #
+save_prf
+save_pst
+
+load_pst 6 8 @
+save_prf
+save_pst
+
+load_pst 12 8 # 4 6 @ +
+save_prf
+save_pst
+
+# load_pst: некорректные
+load_pst
+load_pst #
+load_pst 1 2
+
+# === eval ===
+parse 5*(14-4*2)/2
+eval
+eval x=10,y=20
+
+parse 6#8
+eval
+eval x=6
+
+parse x#y
+eval x=12,y=8
+eval x=0,y=5
+eval x=12
+
+parse x@y
+eval x=4,y=6
+eval x=0,y=6
+
+parse a+b#c
+eval a=1,b=6,c=9
+eval a=10,b=12,c=8
+
+parse x@y+x#y
+eval x=6,y=4
+
+# === приоритеты: # выше @, @ выше * / %, * / % выше + - ===
+parse 2+3#9@6*2
+save_prf
+save_pst
+eval

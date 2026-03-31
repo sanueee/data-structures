@@ -1,0 +1,132 @@
+# === parse: корректные выражения ===
+success
+success
+success
+success
+success
+success
+success
+success
+success
+success
+success
+
+# === parse: некорректные выражения ===
+incorrect
+incorrect
+incorrect
+incorrect
+incorrect
+incorrect
+
+# === save без дерева ===
+not_loaded
+not_loaded
+
+# --- parse + save ---
+# parse 5*(14-4*2)/2
+success
+/ * 5 - 14 * 4 2 2
+5 14 4 2 * - * 2 /
+
+# parse 6#8
+success
+# 6 8
+6 8 #
+
+# parse 1+6#8+11
+success
++ + 1 # 6 8 11
+1 6 8 # + 11 +
+
+# parse 1+6@8+11
+success
++ + 1 @ 6 8 11
+1 6 8 @ + 11 +
+
+# parse (6#9)@(4#8)
+success
+@ # 6 9 # 4 8
+6 9 # 4 8 # @
+
+# === load_prf ===
+success
+5 14 4 2 * - * 2 /
+
+success
+# 6 8
+6 8 #
+
+success
+@ 6 8
+6 8 @
+
+success
++ # 12 8 @ 4 6
+12 8 # 4 6 @ +
+
+incorrect
+incorrect
+incorrect
+
+# === load_pst ===
+success
+/ * 5 - 14 * 4 2 2
+
+success
+# 6 8
+6 8 #
+
+success
+@ 6 8
+6 8 @
+
+success
++ # 12 8 @ 4 6
+12 8 # 4 6 @ +
+
+incorrect
+incorrect
+incorrect    ← два операнда без оператора — некорректно
+
+# === eval ===
+# parse 5*(14-4*2)/2  →  5*(14-8)/2 = 5*6/2 = 15
+success
+15             ← eval без аргументов (нет переменных — ок)
+error          ← x,y не нужны, но лишние переменные не мешают → 15 (зависит от реализации)
+
+# parse 6#8  →  gcd(6,8) = 2
+success
+2
+2              ← x=6 лишнее, но нет переменных в дереве → 2
+
+# parse x#y
+success
+4              ← gcd(12,8)=4
+error          ← x=0 нарушает условие >0
+error          ← y не задан
+
+# parse x@y
+success
+12             ← lcm(4,6)=12
+error          ← x=0 нарушает условие >0
+
+# parse a+b#c  →  a + gcd(b,c)
+success
+4              ← 1 + gcd(6,9) = 1+3 = 4
+13             ← 10 + gcd(12,8) = 10+4 = 14  (проверьте)
+
+# parse x@y+x#y  →  lcm(6,4)+gcd(6,4) = 12+2 = 14
+success
+14
+
+# Приоритеты: 2+3#9@6*2
+# Разбор: # выше @, @ выше *, * выше +
+# 3#9 = gcd(3,9) = 3
+# 3@6 = lcm(3,6) = 6
+# 6*2 = 12
+# 2+12 = 14
+success
++ 2 * @ # 3 9 6 2
+2 3 9 # 6 @ 2 * +
+error    ← нет переменных, все числа → 14
