@@ -24,7 +24,7 @@ typedef struct ASTNode
 } ASTNode;
 
 ASTNode *ast_make_num(int num);
-ASTNode *ast_make_var(const char *var);
+ASTNode *ast_make_var(const char *name);
 ASTNode *ast_make_op(const char op, ASTNode *left, ASTNode *right);
 void ast_free(ASTNode *node);
 void ast_save_prf(ASTNode *node, FILE *output);
