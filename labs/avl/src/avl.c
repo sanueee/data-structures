@@ -87,6 +87,18 @@ node *insert(node *n, int x)
     return balance(n);
 }
 
+node *delete_node(node *n, int x)
+{
+    // todo
+    /*
+    Обработка ошибок и граничных случаев. Учитывайте случаи
+    работы с пустым деревом, повторной вставки одного и того же элемента,
+    удаления несуществующего элемента, запросов с некорректными значениями
+    k и другие!!
+    @kahooso
+    */
+}
+
 int find(node *n, int x)
 {
     while (n)
@@ -99,4 +111,59 @@ int find(node *n, int x)
             n = n->right;
     }
     return 0;
+}
+
+void avl_print(node *n)
+{
+    // todo
+}
+
+node *kth(node *n, unsigned long long x)
+{
+    // todo
+}
+
+unsigned long long range_count(node* n, int l, int r)
+{
+    if (!n) return 0;
+
+    if (n->value < l)
+        return range_count(n->right, l, r);
+
+    if (n->value > r)
+        return range_count(n->left, l, r);
+
+    return 1 + range_count(n->left, l, r) + range_count(n->right, l, r);
+}
+
+int prev(node *n, int x, int *result)
+{
+    if (!n) return 0;
+
+    if (n->value < x)
+    {
+        *result = n->value;
+        int found = prev(n->right, x, result);
+        return 1;
+    } 
+    else
+    {
+        return prev(n->left, x, result);
+    }
+}
+
+int next(node *n, int x, int *result)
+{
+    if (!n) return 0;
+
+    if (n->value > x)
+    {
+        *result = n->value;
+        int found = next(n->left, x, result);
+        return 1;
+    }
+    else
+    {
+        return next(n->left, x, result);
+    }
 }
