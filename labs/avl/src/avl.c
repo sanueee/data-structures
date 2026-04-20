@@ -43,12 +43,12 @@ node *balance(node *n)
     return n;
 }
 
-int get_height(node *n)
+unsigned long long get_height(node *n)
 {
     return n ? n->height : 0;
 }
 
-int get_size(node *n)
+unsigned long long get_size(node *n)
 {
     return n ? n->size : 0;
 }
@@ -170,7 +170,7 @@ node *kth(node *n, int k)
         return kth(n->right, k - l - 1);
 }
 
-int range_count(node *n, int l, int r)
+unsigned long long range_count(node *n, int l, int r)
 {
     if (!n)
         return 0;
@@ -188,6 +188,7 @@ int prev(node *n, int x, int *result)
     if (n->value < x)
     {
         *result = n->value;
+        int found = prev(n->right, x, result);
         return 1;
     }
     else

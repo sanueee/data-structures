@@ -4,8 +4,8 @@
 typedef struct node
 {
     int value;
-    int height;
-    int size;
+    unsigned long long height;
+    unsigned long long size;
     struct node *left;
     struct node *right;
 } node;

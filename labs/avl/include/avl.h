@@ -10,8 +10,8 @@ node *right(node *);
 node *left(node *);
 node *balance(node *);
 
-int get_height(node *);
-int get_size(node *);
+unsigned long long get_height(node *);
+unsigned long long get_size(node *);
 
 void update(node *);
 node *init(int);
@@ -25,7 +25,7 @@ void print(node *);
 node *kth(node *, int);
 
 // sanueee
-int range_count(node *, int, int);
+unsigned long long range_count(node *, int, int);
 int prev(node *, int, int *);
 int next(node *, int, int *);
 

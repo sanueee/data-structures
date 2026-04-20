@@ -60,7 +60,7 @@ static void process(FILE *in, int interactive)
         {
             int l, r;
             fscanf(in, "%d %d", &l, &r);
-            fprintf(stdout, "%d\n", range_count(root, l, r));
+            fprintf(stdout, "%llu\n", range_count(root, l, r));
         }
         else if (strcmp(cmd, "prev") == 0)
         {
@@ -90,7 +90,7 @@ static void process(FILE *in, int interactive)
             {
                 if (x == cur->value)
                 {
-                    fprintf(stdout, "%d\n", cur->size);
+                    fprintf(stdout, "%llu\n", cur->size);
                     found = 1;
                     break;
                 }
