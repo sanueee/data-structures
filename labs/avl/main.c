@@ -36,20 +36,20 @@ static void process(FILE *in, int interactive)
         }
         else if (strcmp(cmd, "print") == 0)
         {
-            avl_print(root);
+            print(root);
             fprintf(stdout, "\n");
         }
         else if (strcmp(cmd, "kth") == 0)
         {
             int k;
             fscanf(in, "%d", &k);
-            if (k < 1 || (unsigned long long)k > get_size(root))
+            if (k < 0 || k > get_size(root))
             {
                 fprintf(stdout, "NO SUCH ELEMENT\n");
             }
             else
             {
-                node *res = kth(root, (unsigned long long)k);
+                node *res = kth(root, k - 1);
                 if (res)
                     fprintf(stdout, "%d\n", res->value);
                 else
@@ -60,7 +60,7 @@ static void process(FILE *in, int interactive)
         {
             int l, r;
             fscanf(in, "%d %d", &l, &r);
-            fprintf(stdout, "%llu\n", range_count(root, l, r));
+            fprintf(stdout, "%d\n", range_count(root, l, r));
         }
         else if (strcmp(cmd, "prev") == 0)
         {
@@ -90,7 +90,7 @@ static void process(FILE *in, int interactive)
             {
                 if (x == cur->value)
                 {
-                    fprintf(stdout, "%llu\n", cur->size);
+                    fprintf(stdout, "%d\n", cur->size);
                     found = 1;
                     break;
                 }

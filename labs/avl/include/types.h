@@ -1,11 +1,11 @@
-#ifndef TYPES_H
-#define TYPES_H
+#ifndef _TYPES_H_
+#define _TYPES_H_
 
 typedef struct node
 {
     int value;
-    unsigned long long height;
-    unsigned long long size;
+    int height;
+    int size;
     struct node *left;
     struct node *right;
 } node;

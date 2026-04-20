@@ -1,18 +1,17 @@
-#ifndef AVL_H
-#define AVL_H
+#ifndef _AVL_H_
+#define _AVL_H_
 
 #include "types.h"
-#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-node *rotate_right(node *);
-node *rotate_left(node *);
+node *right(node *);
+node *left(node *);
 node *balance(node *);
 
-unsigned long long get_height(node *);
-unsigned long long get_size(node *);
+int get_height(node *);
+int get_size(node *);
 
 void update(node *);
 node *init(int);
@@ -20,12 +19,13 @@ node *init(int);
 // kahooso
 node *insert(node *, int);
 node *delete_node(node *, int);
+node *find_min(node *);
 int find(node *, int);
-void avl_print(node *);
-node *kth(node *, unsigned long long);
+void print(node *);
+node *kth(node *, int);
 
 // sanueee
-unsigned long long range_count(node *, int, int);
+int range_count(node *, int, int);
 int prev(node *, int, int *);
 int next(node *, int, int *);
 
